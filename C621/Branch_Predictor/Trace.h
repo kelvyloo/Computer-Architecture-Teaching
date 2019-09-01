@@ -1,6 +1,8 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 enum Instruction_Type{EXE, BRANCH, LOAD, STORE};
+typedef enum Instruction_Type Instruction_Type;
 
 // Instruction Format
 typedef struct Instruction
@@ -15,4 +17,9 @@ typedef struct Instruction
                 // You should reply on this field to determine the correctness of your predictions.
 }Instruction;
 
+typedef struct TraceParser
+{
+    FILE *fd; // file descriptor for the trace file
 
+    Instruction *cur_instr; // current instruction
+}TraceParser;
