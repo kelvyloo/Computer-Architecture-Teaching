@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "Trace.h"
+
 int main(int argc, const char *argv[])
 {	
     if (argc != 2)
