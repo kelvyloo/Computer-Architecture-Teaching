@@ -1,4 +1,4 @@
-SOURCE	:= Main.c
+SOURCE	:= Main.c Trace.c
 CC	:= gcc
 TARGET	:= Main
 
