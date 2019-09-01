@@ -23,8 +23,15 @@ int main(int argc, const char *argv[])
 
     while (getInstruction(cpu_trace))
     {
-    
+        // We are only interested in BRANCH instruction
+        if (cpu_trace->cur_instr->instr_type == BRANCH)
+        {
+            ++num_of_branches;
+        }
+        ++num_of_instructions;
     }
 
-    // 
+    printf("Number of instructions: %"PRIu64"\n", num_of_instructions);
+    printf("Number of branches: %"PRIu64"\n", num_of_branches);
+
 }

@@ -67,7 +67,7 @@ bool getInstruction(TraceParser *cpu_trace)
             cpu_trace->cur_instr->size = atoi(ptr);
         }
 
-        printInstruction(cpu_trace->cur_instr);
+        // printInstruction(cpu_trace->cur_instr);
 	return true;
     }
 
