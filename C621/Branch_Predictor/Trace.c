@@ -1,8 +1,5 @@
 #include "Trace.h"
 
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
-
 TraceParser *initTraceParser(const char * trace_file)
 {
     TraceParser *trace_parser = (TraceParser *)malloc(sizeof(TraceParser));
@@ -13,8 +10,6 @@ TraceParser *initTraceParser(const char * trace_file)
     return trace_parser;
 }
 
-uint64_t convToUint64(char *ptr);
-void printInstruction(Instruction *instr);
 bool getInstruction(TraceParser *cpu_trace)
 {
     char *line = NULL;

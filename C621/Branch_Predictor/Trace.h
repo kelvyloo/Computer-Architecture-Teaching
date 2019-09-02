@@ -1,28 +1,12 @@
+#ifndef __TRACE_HH__
+#define __TRACE_HH__
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h> // uint64_t
-
-enum Instruction_Type{EXE, BRANCH, LOAD, STORE};
-typedef enum Instruction_Type Instruction_Type;
-
-// Instruction Format
-typedef struct Instruction
-{
-    uint64_t PC; // Program Counter of the instruction
-
-    Instruction_Type instr_type; // Instruction type
-
-    uint64_t load_or_store_addr; // load or store address (for LOAD and STORE instructions)
-
-    int size; // Size of data to be loaded/stored
-
-    int taken; // If the instruction is a branch, what is the real direction (not the predicted).
-                // You should reply on this field to determine the correctness of your predictions.
-}Instruction;
+#include "Instruction.h"
 
 typedef struct TraceParser
 {
@@ -30,3 +14,11 @@ typedef struct TraceParser
 
     Instruction *cur_instr; // current instruction
 }TraceParser;
+
+// Define functions
+TraceParser *initTraceParser(const char * trace_file);
+bool getInstruction(TraceParser *cpu_trace);
+uint64_t convToUint64(char *ptr);
+void printInstruction(Instruction *instr);
+
+#endif

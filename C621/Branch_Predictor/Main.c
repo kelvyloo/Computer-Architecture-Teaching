@@ -1,3 +1,4 @@
+#include "Trace.h"
 #include "Branch_Predictor.h"
 
 extern TraceParser *initTraceParser(const char * trace_file);

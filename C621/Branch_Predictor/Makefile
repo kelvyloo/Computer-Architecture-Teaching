@@ -1,4 +1,4 @@
-SOURCE	:= Main.c Trace.c
+SOURCE	:= Main.c Trace.c Branch_Predictor.c
 CC	:= gcc
 TARGET	:= Main
 
