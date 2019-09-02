@@ -29,9 +29,12 @@ Branch_Predictor *initBranchPredictor();
 // Counter functions
 void initSatCounter(Sat_Counter *sat_counter);
 void incrementCounter(Sat_Counter *sat_counter);
+void decrementCounter(Sat_Counter *sat_counter);
 
 // Branch predictor functions
-unsigned getLocalIndex(uint64_t branch_addr, Branch_Predictor *branch_predictor);
+bool predict(Branch_Predictor *branch_predictor, Instruction *instr);
+
+unsigned getLocalIndex(uint64_t branch_addr, unsigned index_mask);
 bool getPrediction(uint8_t counter);
 
 // Utility

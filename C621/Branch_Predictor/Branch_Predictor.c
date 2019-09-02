@@ -23,28 +23,71 @@ Branch_Predictor *initBranchPredictor()
     {
         initSatCounter(&(branch_predictor->local_counters[i]));
     }
+
+    return branch_predictor;
 }
 
+// sat counter functions
 inline void initSatCounter(Sat_Counter *sat_counter)
 {
     sat_counter->counter = 0;
     sat_counter->max_val = (1 << localCounterBits) - 1;
-//    printf("%"PRIu8"\n", sat_counter->max_val);
 }
 
-void incrementCounter(Sat_Counter *sat_counter)
+inline void incrementCounter(Sat_Counter *sat_counter)
 {
+    if (sat_counter->counter < sat_counter->max_val)
+    {
+        ++sat_counter->counter;
+    }
+}
 
+inline void decrementCounter(Sat_Counter *sat_counter)
+{
+    if (sat_counter->counter > 0) 
+    {
+        --sat_counter->counter;
+    }
 }
 
 // Branch Predictor functions
-inline unsigned getLocalIndex(uint64_t branch_addr, Branch_Predictor *branch_predictor)
+bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
 {
-    return (branch_addr >> instShiftAmt) & branch_predictor->index_mask;
+    uint64_t branch_address = instr->PC;
+    
+    // Step one, get prediction
+    unsigned local_index = getLocalIndex(branch_address, 
+                                         branch_predictor->index_mask);
+
+    uint8_t counter = branch_predictor->local_counters[local_index].counter;
+
+    bool prediction = getPrediction(counter);
+
+    // Step two, update counter
+    if (prediction == instr->taken)
+    {
+        // printf("Correct: %u -> ", branch_predictor->local_counters[local_index].counter);
+        incrementCounter(&(branch_predictor->local_counters[local_index]));
+        // printf("%u\n", branch_predictor->local_counters[local_index].counter);
+        return true; // Correct
+    }
+    else
+    {
+        // printf("Incorrect: %u -> ", branch_predictor->local_counters[local_index].counter);
+        decrementCounter(&(branch_predictor->local_counters[local_index]));
+        // printf("%u\n", branch_predictor->local_counters[local_index].counter);
+        return false; // Incorrect
+    }
+}
+
+inline unsigned getLocalIndex(uint64_t branch_addr, unsigned index_mask)
+{
+    return (branch_addr >> instShiftAmt) & index_mask;
 }
 
 inline bool getPrediction(uint8_t counter)
 {
+    // MSB determins the direction
     return (counter >> (localCounterBits - 1));
 }
 

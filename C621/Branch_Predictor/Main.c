@@ -5,6 +5,7 @@ extern TraceParser *initTraceParser(const char * trace_file);
 extern bool getInstruction(TraceParser *cpu_trace);
 
 extern Branch_Predictor *initBranchPredictor();
+extern bool predict(Branch_Predictor *branch_predictor, Instruction *instr);
 
 int main(int argc, const char *argv[])
 {	
@@ -34,11 +35,23 @@ int main(int argc, const char *argv[])
         {
             ++num_of_branches;
 
-            // if (branch_predictor->predict(cpu_trace))
+            if (predict(branch_predictor, cpu_trace->cur_instr))
+            {
+                ++num_of_correct_predictions;
+            }
+            else
+            {
+                ++num_of_incorrect_predictions;
+            }
         }
         ++num_of_instructions;
     }
 
-    printf("Number of instructions: %"PRIu64"\n", num_of_instructions);
-    printf("Number of branches: %"PRIu64"\n", num_of_branches);
+//    printf("Number of instructions: %"PRIu64"\n", num_of_instructions);
+//    printf("Number of branches: %"PRIu64"\n", num_of_branches);
+//    printf("Number of correct predictions: %"PRIu64"\n", num_of_correct_predictions);
+//    printf("Number of incorrect predictions: %"PRIu64"\n", num_of_incorrect_predictions);
+
+    float performance = (float)num_of_correct_predictions / (float)num_of_branches * 100;
+    printf("Predictor Correctness: %f%%\n", performance);
 }
