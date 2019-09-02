@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "Instruction.h"
 
@@ -28,6 +29,10 @@ Branch_Predictor *initBranchPredictor();
 // Counter functions
 void initSatCounter(Sat_Counter *sat_counter);
 void incrementCounter(Sat_Counter *sat_counter);
+
+// Branch predictor functions
+unsigned getLocalIndex(uint64_t branch_addr, Branch_Predictor *branch_predictor);
+bool getPrediction(uint8_t counter);
 
 // Utility
 int checkPowerofTwo(unsigned x);

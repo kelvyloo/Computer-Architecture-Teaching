@@ -25,7 +25,7 @@ Branch_Predictor *initBranchPredictor()
     }
 }
 
-void initSatCounter(Sat_Counter *sat_counter)
+inline void initSatCounter(Sat_Counter *sat_counter)
 {
     sat_counter->counter = 0;
     sat_counter->max_val = (1 << localCounterBits) - 1;
@@ -35,6 +35,17 @@ void initSatCounter(Sat_Counter *sat_counter)
 void incrementCounter(Sat_Counter *sat_counter)
 {
 
+}
+
+// Branch Predictor functions
+inline unsigned getLocalIndex(uint64_t branch_addr, Branch_Predictor *branch_predictor)
+{
+    return (branch_addr >> instShiftAmt) & branch_predictor->index_mask;
+}
+
+inline bool getPrediction(uint8_t counter)
+{
+    return (counter >> (localCounterBits - 1));
 }
 
 int checkPowerofTwo(unsigned x)
