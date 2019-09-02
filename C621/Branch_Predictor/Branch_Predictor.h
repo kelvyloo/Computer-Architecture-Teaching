@@ -8,6 +8,9 @@
 
 #include "Instruction.h"
 
+// Predictor type
+#define TWO_BIT_LOCAL
+
 // saturating counter
 typedef struct Sat_Counter
 {
