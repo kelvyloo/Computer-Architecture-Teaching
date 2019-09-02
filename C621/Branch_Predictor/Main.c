@@ -4,6 +4,8 @@
 extern TraceParser *initTraceParser(const char * trace_file);
 extern bool getInstruction(TraceParser *cpu_trace);
 
+extern Branch_Predictor *initBranchPredictor();
+
 int main(int argc, const char *argv[])
 {	
     if (argc != 2)
@@ -17,6 +19,7 @@ int main(int argc, const char *argv[])
     TraceParser *cpu_trace = initTraceParser(argv[1]);
 
     // Initialize a branch predictor
+    Branch_Predictor *branch_predictor = initBranchPredictor();
 
     // Running the trace
     uint64_t num_of_instructions = 0;
@@ -38,5 +41,4 @@ int main(int argc, const char *argv[])
 
     printf("Number of instructions: %"PRIu64"\n", num_of_instructions);
     printf("Number of branches: %"PRIu64"\n", num_of_branches);
-
 }
