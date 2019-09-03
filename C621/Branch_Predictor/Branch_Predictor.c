@@ -5,12 +5,19 @@ const unsigned instShiftAmt = 2; // Number of bits to shift a PC by
 // You can play around with these settings.
 const unsigned localPredictorSize = 2048;
 const unsigned localCounterBits = 2;
+const unsigned globalPredictorSize = 8192;
+const unsigned globalCounterBits = 2;
+const unsigned choicePredictorSize = 8192;
+const unsigned choiceCounterBits = 2;
 
 Branch_Predictor *initBranchPredictor()
 {
     Branch_Predictor *branch_predictor = (Branch_Predictor *)malloc(sizeof(Branch_Predictor));
-    branch_predictor->local_predictor_sets = localPredictorSize / localCounterBits;
+
+    #ifdef TWO_BIT_LOCAL
+    branch_predictor->local_predictor_sets = localPredictorSize;
     assert(checkPowerofTwo(branch_predictor->local_predictor_sets));
+    
 
     branch_predictor->index_mask = branch_predictor->local_predictor_sets - 1;
 
@@ -23,6 +30,7 @@ Branch_Predictor *initBranchPredictor()
     {
         initSatCounter(&(branch_predictor->local_counters[i]));
     }
+    #endif
 
     return branch_predictor;
 }
@@ -54,7 +62,8 @@ inline void decrementCounter(Sat_Counter *sat_counter)
 bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
 {
     uint64_t branch_address = instr->PC;
-    
+
+    #ifdef TWO_BIT_LOCAL    
     // Step one, get prediction
     unsigned local_index = getLocalIndex(branch_address, 
                                          branch_predictor->index_mask);
@@ -78,6 +87,7 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
         // printf("%u\n", branch_predictor->local_counters[local_index].counter);
         return false; // Incorrect
     }
+    #endif
 }
 
 inline unsigned getLocalIndex(uint64_t branch_addr, unsigned index_mask)

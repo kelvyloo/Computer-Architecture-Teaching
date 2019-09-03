@@ -9,7 +9,8 @@
 #include "Instruction.h"
 
 // Predictor type
-#define TWO_BIT_LOCAL
+// #define TWO_BIT_LOCAL
+#define BI_MODE
 
 // saturating counter
 typedef struct Sat_Counter
@@ -20,10 +21,22 @@ typedef struct Sat_Counter
 
 typedef struct Branch_Predictor
 {
+    #ifdef TWO_BIT_LOCAL
     unsigned local_predictor_sets; // Number of entries in a local predictor
     unsigned index_mask;
 
     Sat_Counter *local_counters;
+    #endif
+
+    #ifdef BI_MODE
+    unsigned choice_counter_size;
+    unsigned taken_counter_size;
+    unsigned not_taken_counter_size;
+
+    Sat_Counter *choice_counters;
+    Sat_Counter *taken_counters;
+    Sat_Counter *not_taken_counters;
+    #endif
 }Branch_Predictor;
 
 // Initialization function
