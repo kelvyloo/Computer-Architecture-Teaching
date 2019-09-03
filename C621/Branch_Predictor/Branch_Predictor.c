@@ -32,6 +32,21 @@ Branch_Predictor *initBranchPredictor()
     }
     #endif
 
+    #ifdef BI_MODE
+    branch_predictor->choice_counter_size = choicePredictorSize;
+    branch_predictor->taken_counter_size = globalPredictorSize;
+    branch_predictor->not_taken_counter_size = globalPredictorSize;
+
+    branch_predictor->history_register_mask = log(globalPredictorSize) / log(2);
+    branch_predictor->choice_history_mask = choicePredictorSize - 1;
+    branch_predictor->global_history_mask = globalPredictorSize - 1;
+
+    printf("history register mask: %u\n", branch_predictor->history_register_mask);
+    printf("choice history mask: %u\n", branch_predictor->choice_history_mask);
+    printf("global history mask: %u\n", branch_predictor->global_history_mask);
+    #endif
+
+    exit(0);
     return branch_predictor;
 }
 

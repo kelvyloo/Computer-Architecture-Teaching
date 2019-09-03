@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "Instruction.h"
 
@@ -36,6 +37,10 @@ typedef struct Branch_Predictor
     Sat_Counter *choice_counters;
     Sat_Counter *taken_counters;
     Sat_Counter *not_taken_counters;
+
+    unsigned history_register_mask;
+    unsigned choice_history_mask;
+    unsigned global_history_mask;
     #endif
 }Branch_Predictor;
 
