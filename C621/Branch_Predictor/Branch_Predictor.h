@@ -36,6 +36,7 @@ typedef struct Branch_Predictor
     Sat_Counter *local_counters;
 
     unsigned local_history_table_size;
+    unsigned local_history_table_mask;
     unsigned *local_history_table;
 
     unsigned global_predictor_size;
@@ -46,6 +47,7 @@ typedef struct Branch_Predictor
     unsigned choice_history_mask;
     Sat_Counter *choice_counters;
 
+    uint64_t global_history;
     unsigned history_register_mask;
     #endif
 }Branch_Predictor;
