@@ -49,8 +49,8 @@ int main(int argc, const char *argv[])
 
 //    printf("Number of instructions: %"PRIu64"\n", num_of_instructions);
 //    printf("Number of branches: %"PRIu64"\n", num_of_branches);
-//    printf("Number of correct predictions: %"PRIu64"\n", num_of_correct_predictions);
-//    printf("Number of incorrect predictions: %"PRIu64"\n", num_of_incorrect_predictions);
+    printf("Number of correct predictions: %"PRIu64"\n", num_of_correct_predictions);
+    printf("Number of incorrect predictions: %"PRIu64"\n", num_of_incorrect_predictions);
 
     float performance = (float)num_of_correct_predictions / (float)num_of_branches * 100;
     printf("Predictor Correctness: %f%%\n", performance);

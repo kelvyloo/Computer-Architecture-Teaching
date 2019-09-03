@@ -133,23 +133,23 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
     unsigned local_index = getIndex(branch_address, 
                                     branch_predictor->index_mask);
 
-    bool prediction = getPrediction(branch_predictor->local_counters[local_index]);
+    bool prediction = getPrediction(&(branch_predictor->local_counters[local_index]));
 
     // Step two, update counter
-    if (prediction == instr->taken)
+    if (instr->taken)
     {
         // printf("Correct: %u -> ", branch_predictor->local_counters[local_index].counter);
         incrementCounter(&(branch_predictor->local_counters[local_index]));
         // printf("%u\n", branch_predictor->local_counters[local_index].counter);
-        return true; // Correct
     }
     else
     {
         // printf("Incorrect: %u -> ", branch_predictor->local_counters[local_index].counter);
         decrementCounter(&(branch_predictor->local_counters[local_index]));
         // printf("%u\n", branch_predictor->local_counters[local_index].counter);
-        return false; // Incorrect
     }
+
+    return prediction == instr->taken;
     #endif
 
     #ifdef TOURNAMENT
@@ -190,10 +190,38 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
         final_prediction = local_prediction;
     }
 
-    // Step five, update.
-    
+    bool prediction_correct = final_prediction == instr->taken;
+    // Step five, update counters
+    if (local_prediction != global_prediction)
+    {
+        if (local_prediction == instr->taken)
+        {
+            // Should be more favorable towards local predictor.
+            decrementCounter(&(branch_predictor->choice_counters[choice_predictor_idx]));
+        }
+        else if (global_prediction == instr->taken)
+        {
+            // Should be more favorable towards global predictor.
+            incrementCounter(&(branch_predictor->choice_counters[choice_predictor_idx]));
+        }
+    }
 
-    exit(0);
+    if (instr->taken)
+    {
+        incrementCounter(&(branch_predictor->global_counters[global_predictor_idx]));
+        incrementCounter(&(branch_predictor->local_counters[local_predictor_idx]));
+    }
+    else
+    {
+        decrementCounter(&(branch_predictor->global_counters[global_predictor_idx]));
+        decrementCounter(&(branch_predictor->local_counters[local_predictor_idx]));
+    }
+
+    // Step six, update global history register
+    branch_predictor->global_history = branch_predictor->global_history << 1 | instr->taken;
+    // exit(0);
+    //
+    return prediction_correct;
     #endif
 }
 
