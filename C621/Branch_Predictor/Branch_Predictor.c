@@ -5,9 +5,10 @@ const unsigned instShiftAmt = 2; // Number of bits to shift a PC by
 // You can play around with these settings.
 const unsigned localPredictorSize = 2048;
 const unsigned localCounterBits = 2;
+const unsigned localHistoryTableSize = 2048; 
 const unsigned globalPredictorSize = 8192;
 const unsigned globalCounterBits = 2;
-const unsigned choicePredictorSize = 8192;
+const unsigned choicePredictorSize = 8192; // Keep this the same as globalPredictorSize.
 const unsigned choiceCounterBits = 2;
 
 Branch_Predictor *initBranchPredictor()
@@ -22,28 +23,73 @@ Branch_Predictor *initBranchPredictor()
     branch_predictor->index_mask = branch_predictor->local_predictor_sets - 1;
 
     // Initialize sat counters
-    branch_predictor->local_counters = (Sat_Counter *)malloc(branch_predictor->local_predictor_sets *
-                                                             sizeof(Sat_Counter));
+    branch_predictor->local_counters =
+        (Sat_Counter *)malloc(branch_predictor->local_predictor_sets * sizeof(Sat_Counter));
 
     int i = 0;
     for (i; i < branch_predictor->local_predictor_sets; i++)
     {
-        initSatCounter(&(branch_predictor->local_counters[i]));
+        initSatCounter(&(branch_predictor->local_counters[i]), localCounterBits);
     }
     #endif
 
-    #ifdef BI_MODE
-    branch_predictor->choice_counter_size = choicePredictorSize;
-    branch_predictor->taken_counter_size = globalPredictorSize;
-    branch_predictor->not_taken_counter_size = globalPredictorSize;
+    #ifdef TOURNAMENT
+    assert(checkPowerofTwo(localPredictorSize));
+    assert(checkPowerofTwo(localHistoryTableSize));
+    assert(checkPowerofTwo(globalPredictorSize));
+    assert(checkPowerofTwo(choicePredictorSize));
+    assert(globalPredictorSize == choicePredictorSize);
 
-    branch_predictor->history_register_mask = log(globalPredictorSize) / log(2);
-    branch_predictor->choice_history_mask = choicePredictorSize - 1;
+    branch_predictor->local_predictor_size = localPredictorSize;
+    branch_predictor->local_history_table_size = localHistoryTableSize;
+    branch_predictor->global_predictor_size = globalPredictorSize;
+    branch_predictor->choice_predictor_size = choicePredictorSize;
+   
+    // Initialize local counters 
+    branch_predictor->local_counters =
+        (Sat_Counter *)malloc(localPredictorSize * sizeof(Sat_Counter));
+
+    int i = 0;
+    for (i; i < localPredictorSize; i++)
+    {
+        initSatCounter(&(branch_predictor->local_counters[i]), localCounterBits);
+    }
+
+    branch_predictor->local_predictor_mask = localPredictorSize - 1;
+
+    // Initialize local history table
+    branch_predictor->local_history_table = 
+        (unsigned *)malloc(localHistoryTableSize * sizeof(unsigned));
+
+    for (i = 0; i < localHistoryTableSize; i++)
+    {
+        branch_predictor->local_history_table[i] = 0;
+    }
+
+    // Initialize global counters
+    branch_predictor->global_counters = 
+        (Sat_Counter *)malloc(globalPredictorSize * sizeof(Sat_Counter));
+
+    for (i = 0; i < globalPredictorSize; i++)
+    {
+        initSatCounter(&(branch_predictor->global_counters[i]), globalCounterBits);
+    }
+
     branch_predictor->global_history_mask = globalPredictorSize - 1;
 
-    printf("history register mask: %u\n", branch_predictor->history_register_mask);
-    printf("choice history mask: %u\n", branch_predictor->choice_history_mask);
-    printf("global history mask: %u\n", branch_predictor->global_history_mask);
+    // Initialize choice counters
+    branch_predictor->choice_counters = 
+        (Sat_Counter *)malloc(choicePredictorSize * sizeof(Sat_Counter));
+
+    for (i = 0; i < choicePredictorSize; i++)
+    {
+        initSatCounter(&(branch_predictor->choice_counters[i]), choiceCounterBits);
+    }
+
+    branch_predictor->choice_history_mask = choicePredictorSize - 1;
+
+    // History register mask
+    branch_predictor->history_register_mask = choicePredictorSize - 1;
     #endif
 
     exit(0);
@@ -51,10 +97,11 @@ Branch_Predictor *initBranchPredictor()
 }
 
 // sat counter functions
-inline void initSatCounter(Sat_Counter *sat_counter)
+inline void initSatCounter(Sat_Counter *sat_counter, unsigned counter_bits)
 {
+    sat_counter->counter_bits = counter_bits;
     sat_counter->counter = 0;
-    sat_counter->max_val = (1 << localCounterBits) - 1;
+    sat_counter->max_val = (1 << counter_bits) - 1;
 }
 
 inline void incrementCounter(Sat_Counter *sat_counter)
@@ -80,12 +127,10 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
 
     #ifdef TWO_BIT_LOCAL    
     // Step one, get prediction
-    unsigned local_index = getLocalIndex(branch_address, 
-                                         branch_predictor->index_mask);
+    unsigned local_index = getIndex(branch_address, 
+                                    branch_predictor->index_mask);
 
-    uint8_t counter = branch_predictor->local_counters[local_index].counter;
-
-    bool prediction = getPrediction(counter);
+    bool prediction = getPrediction(branch_predictor->local_counters[local_index]);
 
     // Step two, update counter
     if (prediction == instr->taken)
@@ -105,15 +150,18 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
     #endif
 }
 
-inline unsigned getLocalIndex(uint64_t branch_addr, unsigned index_mask)
+inline unsigned getIndex(uint64_t branch_addr, unsigned index_mask)
 {
     return (branch_addr >> instShiftAmt) & index_mask;
 }
 
-inline bool getPrediction(uint8_t counter)
+inline bool getPrediction(Sat_Counter *sat_counter)
 {
+    uint8_t counter = sat_counter->counter;
+    unsigned counter_bits = sat_counter->counter_bits;
+
     // MSB determins the direction
-    return (counter >> (localCounterBits - 1));
+    return (counter >> (counter_bits - 1));
 }
 
 int checkPowerofTwo(unsigned x)

@@ -11,11 +11,12 @@
 
 // Predictor type
 // #define TWO_BIT_LOCAL
-#define BI_MODE
+#define TOURNAMENT
 
 // saturating counter
 typedef struct Sat_Counter
 {
+    unsigned counter_bits;
     uint8_t max_val;
     uint8_t counter;
 }Sat_Counter;
@@ -29,18 +30,23 @@ typedef struct Branch_Predictor
     Sat_Counter *local_counters;
     #endif
 
-    #ifdef BI_MODE
-    unsigned choice_counter_size;
-    unsigned taken_counter_size;
-    unsigned not_taken_counter_size;
+    #ifdef TOURNAMENT
+    unsigned local_predictor_size;
+    unsigned local_predictor_mask;
+    Sat_Counter *local_counters;
 
+    unsigned local_history_table_size;
+    unsigned *local_history_table;
+
+    unsigned global_predictor_size;
+    unsigned global_history_mask;
+    Sat_Counter *global_counters;
+
+    unsigned choice_predictor_size;
+    unsigned choice_history_mask;
     Sat_Counter *choice_counters;
-    Sat_Counter *taken_counters;
-    Sat_Counter *not_taken_counters;
 
     unsigned history_register_mask;
-    unsigned choice_history_mask;
-    unsigned global_history_mask;
     #endif
 }Branch_Predictor;
 
@@ -48,15 +54,15 @@ typedef struct Branch_Predictor
 Branch_Predictor *initBranchPredictor();
 
 // Counter functions
-void initSatCounter(Sat_Counter *sat_counter);
+void initSatCounter(Sat_Counter *sat_counter, unsigned counter_bits);
 void incrementCounter(Sat_Counter *sat_counter);
 void decrementCounter(Sat_Counter *sat_counter);
 
 // Branch predictor functions
 bool predict(Branch_Predictor *branch_predictor, Instruction *instr);
 
-unsigned getLocalIndex(uint64_t branch_addr, unsigned index_mask);
-bool getPrediction(uint8_t counter);
+unsigned getIndex(uint64_t branch_addr, unsigned index_mask);
+bool getPrediction(Sat_Counter *sat_counter);
 
 // Utility
 int checkPowerofTwo(unsigned x);
