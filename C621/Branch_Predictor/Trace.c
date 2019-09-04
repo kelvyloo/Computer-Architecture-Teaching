@@ -62,11 +62,15 @@ bool getInstruction(TraceParser *cpu_trace)
             cpu_trace->cur_instr->size = atoi(ptr);
         }
 
+        free(line);
+        line = NULL;
         // printInstruction(cpu_trace->cur_instr);
 	return true;
     }
 
     // Release memory
+    free(line);
+
     fclose(cpu_trace->fd);
     free(cpu_trace->cur_instr);
     free(cpu_trace);
