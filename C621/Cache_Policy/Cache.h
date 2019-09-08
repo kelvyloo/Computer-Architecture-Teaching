@@ -23,7 +23,8 @@ typedef struct Cache
 
     /* Set-Associative Information */
     unsigned num_sets; // Number of sets
-    
+    unsigned num_ways; // Number of ways within a set
+
     unsigned set_shift;
     unsigned set_mask; // To extract set index
     unsigned tag_shift; // To extract tag
@@ -32,6 +33,8 @@ typedef struct Cache
     
 }Cache;
 
+// Function Definitions
 Cache *initCache();
+bool accessBlock(Request *req, uint64_t access_time);
 
 #endif

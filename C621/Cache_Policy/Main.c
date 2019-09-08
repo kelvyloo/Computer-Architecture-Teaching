@@ -20,7 +20,7 @@ int main(int argc, const char *argv[])
 
     // Initialize a Cache
     Cache *cache = initCache();
-
+    
     // Running the trace
     uint64_t num_of_reqs = 0;
 
