@@ -1,4 +1,5 @@
 #include "Trace.h"
+#include "Cache.h"
 
 extern TraceParser *initTraceParser(const char * mem_file);
 extern bool getRequest(TraceParser *mem_trace);
@@ -20,6 +21,10 @@ int main(int argc, const char *argv[])
 
     while (getRequest(mem_trace))
     {
+        // Step one, accessBlock()
+
+        // Step two, insertBlock() if there is a miss
+
         ++num_of_reqs;
     }
 }
