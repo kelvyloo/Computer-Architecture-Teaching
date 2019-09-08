@@ -4,6 +4,8 @@
 extern TraceParser *initTraceParser(const char * mem_file);
 extern bool getRequest(TraceParser *mem_trace);
 
+extern Cache* initCache();
+
 int main(int argc, const char *argv[])
 {	
     if (argc != 2)
@@ -15,6 +17,9 @@ int main(int argc, const char *argv[])
 
     // Initialize a CPU trace parser
     TraceParser *mem_trace = initTraceParser(argv[1]);
+
+    // Initialize a Cache
+    Cache *cache = initCache();
 
     // Running the trace
     uint64_t num_of_reqs = 0;

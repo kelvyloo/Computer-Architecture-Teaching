@@ -18,6 +18,10 @@ typedef struct Cache_Block
 
     uint32_t set; // Which set this block belongs to?
     uint32_t way; // Which way (within this set) belongs to?
+
+    // Advanced Features
+    uint64_t PC; // Which instruction that brings in this block?
+    int core_id; // Which core the instruction is running on.
 }Cache_Block;
 
 #endif

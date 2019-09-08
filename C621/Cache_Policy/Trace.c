@@ -48,7 +48,7 @@ bool getRequest(TraceParser *mem_trace)
 
         free(line);
         line = NULL;
-        printMemRequest(mem_trace->cur_req);
+//        printMemRequest(mem_trace->cur_req);
 	return true;
     }
 
