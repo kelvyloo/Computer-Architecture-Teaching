@@ -1,79 +1,63 @@
 #include "Trace.h"
 
-TraceParser *initTraceParser(const char * trace_file)
+TraceParser *initTraceParser(const char * mem_file)
 {
     TraceParser *trace_parser = (TraceParser *)malloc(sizeof(TraceParser));
 
-    trace_parser->fd = fopen(trace_file, "r");
-    trace_parser->cur_instr = (Instruction *)malloc(sizeof(Instruction));
+    trace_parser->fd = fopen(mem_file, "r");
+    trace_parser->cur_req = (Request *)malloc(sizeof(Request));
 
     return trace_parser;
 }
 
-bool getInstruction(TraceParser *cpu_trace)
+bool getRequest(TraceParser *mem_trace)
 {
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
 
-    if ((read = getline(&line, &len, cpu_trace->fd)) != -1)
+    if ((read = getline(&line, &len, mem_trace->fd)) != -1)
     {
 	char delim[] = " \n";
 
-        // This is the PC
 	char *ptr = strtok(line, delim);
-	cpu_trace->cur_instr->PC = convToUint64(ptr);
-
-        // This is the instruction type
+        // Extract core ID
+        int core_id = atoi(ptr);
+        // Extract PC
         ptr = strtok(NULL, delim);
-        if (strcmp(ptr, "B") == 0)
-	{
-            cpu_trace->cur_instr->instr_type = BRANCH;
-        }
-        else if (strcmp(ptr, "E") == 0)
+        uint64_t PC = convToUint64(ptr);
+        // Extract Load or Store Address
+        ptr = strtok(NULL, delim);
+        uint64_t load_or_store_addr = convToUint64(ptr);
+        // Extract Request Type
+        ptr = strtok(NULL, delim);
+        Request_Type req_type;
+        if (strcmp(ptr, "L") == 0)
         {
-            cpu_trace->cur_instr->instr_type = EXE;
-        }
-        else if (strcmp(ptr, "L") == 0)
-        {
-            cpu_trace->cur_instr->instr_type = LOAD;
+            req_type = LOAD;
         }
         else if (strcmp(ptr, "S") == 0)
         {
-            cpu_trace->cur_instr->instr_type = STORE;
+            req_type = STORE;
         }
 
-        // More info
-        if (strcmp(ptr, "B") == 0)
-        {
-            ptr = strtok(NULL, delim);
-
-            cpu_trace->cur_instr->taken = atoi(ptr);
-        }
-
-        if (strcmp(ptr, "L") == 0 || strcmp(ptr, "S") == 0)
-        {
-            ptr = strtok(NULL, delim);
-            
-            cpu_trace->cur_instr->load_or_store_addr = convToUint64(ptr);
-
-            ptr = strtok(NULL, delim);
-            
-            cpu_trace->cur_instr->size = atoi(ptr);
-        }
+        mem_trace->cur_req->req_type = req_type;
+        mem_trace->cur_req->load_or_store_addr = load_or_store_addr;
+        mem_trace->cur_req->PC = PC;
+        mem_trace->cur_req->core_id = core_id;
 
         free(line);
         line = NULL;
-        // printInstruction(cpu_trace->cur_instr);
+        printMemRequest(mem_trace->cur_req);
 	return true;
     }
 
     // Release memory
     free(line);
 
-    fclose(cpu_trace->fd);
-    free(cpu_trace->cur_instr);
-    free(cpu_trace);
+    fclose(mem_trace->fd);
+    free(mem_trace->cur_req);
+    free(mem_trace);
     return false;
 }
 
@@ -106,29 +90,20 @@ uint64_t convToUint64(char *ptr)
 }
 
 // print instruction (debugging)
-void printInstruction(Instruction *instr)
+void printMemRequest(Request *req)
 {
-    printf("%"PRIu64" ", instr->PC);
+    printf("%d ", req->core_id);
 
-    if (instr->instr_type == BRANCH)
+    printf("%"PRIu64" ", req->PC);
+    
+    printf("%"PRIu64" ", req->load_or_store_addr);
+
+    if (req->req_type == LOAD)
     {
-        printf("B ");
-        printf("%d\n", instr->taken);
+        printf("L\n");
     }
-    else if (instr->instr_type == LOAD)
+    else if (req->req_type == STORE)
     {
-        printf("L ");
-        printf("%"PRIu64" ", instr->load_or_store_addr);
-        printf("%d\n", instr->size);
-    }
-    else if (instr->instr_type == STORE)
-    {
-        printf("S ");
-        printf("%"PRIu64" ", instr->load_or_store_addr);
-        printf("%d\n", instr->size);
-    }
-    else if (instr->instr_type == EXE)
-    {
-        printf("E\n");
+        printf("S\n");
     }
 }

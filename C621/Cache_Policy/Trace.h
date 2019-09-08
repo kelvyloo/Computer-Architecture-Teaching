@@ -6,19 +6,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Instruction.h"
+#include "Request.h"
 
 typedef struct TraceParser
 {
     FILE *fd; // file descriptor for the trace file
 
-    Instruction *cur_instr; // current instruction
+    Request *cur_req; // current instruction
 }TraceParser;
 
 // Define functions
-TraceParser *initTraceParser(const char * trace_file);
-bool getInstruction(TraceParser *cpu_trace);
+TraceParser *initTraceParser(const char * mem_file);
+bool getRequest(TraceParser *mem_trace);
 uint64_t convToUint64(char *ptr);
-void printInstruction(Instruction *instr);
+void printMemRequest(Request *req);
 
 #endif
