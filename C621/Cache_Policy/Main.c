@@ -21,6 +21,7 @@ int main(int argc, const char *argv[])
     TraceParser *mem_trace = initTraceParser(argv[1]);
 
     // Initialize a Cache
+    // TODO, should have L2 and L3
     Cache *cache = initCache();
     
     // Running the trace

@@ -98,14 +98,14 @@ bool accessBlock(Cache *cache, Request *req, uint64_t access_time)
     return hit;
 }
 
-void insertBlock(Cache *cache, Request *req, uint64_t access_time)
+bool insertBlock(Cache *cache, Request *req, uint64_t access_time, uint64_t *wb_addr)
 {
     // Step one, find a victim block
     uint64_t blk_aligned_addr = blkAlign(req->load_or_store_addr, cache->blk_mask);
 
     Cache_Block *victim = NULL;
     #ifdef LRU
-        victim = lru(cache, blk_aligned_addr);
+        victim = lru(cache, blk_aligned_addr, &victim, wb_addr);
     #endif
     assert(victim != NULL);
 
@@ -156,7 +156,7 @@ Cache_Block *findBlock(Cache *cache, uint64_t addr)
     return NULL;
 }
 
-Cache_Block *lru(Cache *cache, uint64_t addr)
+Cache_Block *lru(Cache *cache, uint64_t addr, uint64_t *wb_addr)
 {
     uint64_t set_idx = (addr >> cache->set_shift) & cache->set_mask;
     //    printf("Set: %"PRIu64"\n", set_idx);
@@ -182,6 +182,8 @@ Cache_Block *lru(Cache *cache, uint64_t addr)
         }
     }
 
+    // Step three, need to write-back the victim block
+    *wb_addr = (victim->tag << cache->tag_shift) | (victim->set << cache->set_shift);
 //    uint64_t ori_addr = (victim->tag << cache->tag_shift) | (victim->set << cache->set_shift);
 //    printf("Evicted: %"PRIu64"\n", ori_addr);
 
