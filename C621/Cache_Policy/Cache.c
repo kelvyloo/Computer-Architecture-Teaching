@@ -3,7 +3,7 @@
 /* Constants */
 const unsigned block_size = 64; // Size of a cache line (in Bytes)
 // TODO, you should try different size of cache, for example, 128KB, 256KB, 512KB, 1MB, 2MB
-const unsigned cache_size = 128; // Size of a cache (in KB)
+const unsigned cache_size = 1; // Size of a cache (in KB)
 // TODO, you should try different association configurations, for example 4, 8, 16
 const unsigned assoc = 16;
 
@@ -105,7 +105,7 @@ bool insertBlock(Cache *cache, Request *req, uint64_t access_time, uint64_t *wb_
 
     Cache_Block *victim = NULL;
     #ifdef LRU
-        victim = lru(cache, blk_aligned_addr, &victim, wb_addr);
+        bool wb_required = lru(cache, blk_aligned_addr, &victim, wb_addr);
     #endif
     assert(victim != NULL);
 
@@ -122,6 +122,7 @@ bool insertBlock(Cache *cache, Request *req, uint64_t access_time, uint64_t *wb_
         victim->dirty = true;
     }
 
+    return wb_required;
 //    printf("Inserted: %"PRIu64"\n", req->load_or_store_addr);
 }
 
@@ -156,7 +157,7 @@ Cache_Block *findBlock(Cache *cache, uint64_t addr)
     return NULL;
 }
 
-Cache_Block *lru(Cache *cache, uint64_t addr, uint64_t *wb_addr)
+bool lru(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr)
 {
     uint64_t set_idx = (addr >> cache->set_shift) & cache->set_mask;
     //    printf("Set: %"PRIu64"\n", set_idx);
@@ -168,7 +169,8 @@ Cache_Block *lru(Cache *cache, uint64_t addr, uint64_t *wb_addr)
     {
         if (ways[i]->valid == false)
         {
-            return ways[i];
+            *victim_blk = ways[i];
+            return false; // No need to write-back
         }
     }
 
@@ -194,5 +196,7 @@ Cache_Block *lru(Cache *cache, uint64_t addr, uint64_t *wb_addr)
     victim->frequency = 0;
     victim->when_touched = 0;
 
-    return victim; // Return back the LRU block.
+    *victim_blk = victim;
+
+    return true; // Need to write-back
 }

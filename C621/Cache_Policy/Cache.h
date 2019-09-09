@@ -49,6 +49,6 @@ uint64_t blkAlign(uint64_t addr, uint64_t mask);
 Cache_Block *findBlock(Cache *cache, uint64_t addr);
 
 // Replacement Policies
-bool *lru(Cache *cache, uint64_t addr, Cache_Block **victim, uint64_t *wb_addr);
+bool lru(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr);
 
 #endif
