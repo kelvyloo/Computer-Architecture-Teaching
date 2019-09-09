@@ -25,6 +25,8 @@ int main(int argc, const char *argv[])
     
     // Running the trace
     uint64_t num_of_reqs = 0;
+    uint64_t hits = 0;
+    uint64_t misses = 0;
 
     uint64_t cycles = 0;
     while (getRequest(mem_trace))
@@ -32,12 +34,13 @@ int main(int argc, const char *argv[])
         // Step one, accessBlock()
         if (accessBlock(cache, mem_trace->cur_req, cycles))
         {
-            // Cache hit!
-	    // printf("Hit\n");
+            // Cache hit
+            hits++;
         }
         else
         {
             // Cache miss!
+            misses++;
             // Step two, insertBlock()
             insertBlock(cache, mem_trace->cur_req, cycles);
         }
@@ -45,4 +48,7 @@ int main(int argc, const char *argv[])
         ++num_of_reqs;
         ++cycles;
     }
+
+    double hit_rate = (double)hits / ((double)hits + (double)misses);
+    printf("Hit rate: %lf%%\n", hit_rate * 100);
 }

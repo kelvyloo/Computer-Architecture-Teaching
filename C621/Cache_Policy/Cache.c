@@ -2,8 +2,8 @@
 
 /* Constants */
 const unsigned block_size = 64; // Size of a cache line (in Bytes)
-// TODO, you should try different size of cache, for example, 512KB, 1MB, 2MB
-const unsigned cache_size = 1; // Size of a cache (in KB)
+// TODO, you should try different size of cache, for example, 128KB, 256KB, 512KB, 1MB, 2MB
+const unsigned cache_size = 128; // Size of a cache (in KB)
 // TODO, you should try different association configurations, for example 4, 8, 16
 const unsigned assoc = 16;
 
@@ -121,6 +121,8 @@ void insertBlock(Cache *cache, Request *req, uint64_t access_time)
     {
         victim->dirty = true;
     }
+
+//    printf("Inserted: %"PRIu64"\n", req->load_or_store_addr);
 }
 
 // Helper Functions
@@ -179,6 +181,9 @@ Cache_Block *lru(Cache *cache, uint64_t addr)
             victim = ways[i];
         }
     }
+
+//    uint64_t ori_addr = (victim->tag << cache->tag_shift) | (victim->set << cache->set_shift);
+//    printf("Evicted: %"PRIu64"\n", ori_addr);
 
     // Step three, invalidate victim
     victim->tag = UINTMAX_MAX;
