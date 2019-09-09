@@ -1,1 +1,1 @@
-Diary on how to improve my teaching style.
+Frameworks for ECEC-621 and ECEC-623 Advanced Computer Architecture.
