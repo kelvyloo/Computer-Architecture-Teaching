@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include <math.h>
+#include <stdint.h>
 
 #include "Cache_Blk.h"
 #include "Request.h"
@@ -17,6 +18,7 @@ typedef struct Set
 
 typedef struct Cache
 {
+    uint64_t blk_mask;
     unsigned num_blocks;
     
     Cache_Block *blocks; // All cache blocks
@@ -35,6 +37,11 @@ typedef struct Cache
 
 // Function Definitions
 Cache *initCache();
-bool accessBlock(Request *req, uint64_t access_time);
+bool accessBlock(Cache *cache, Request *req, uint64_t access_time);
+void insertBlock(Cache *cache, Request *req);
+
+// Helper Function
+uint64_t blkAlign(uint64_t addr, uint64_t mask);
+Cache_Block *findBlock(Cache *cache, uint64_t addr);
 
 #endif

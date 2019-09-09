@@ -5,11 +5,13 @@ const unsigned block_size = 64; // Size of a cache line (in Bytes)
 // TODO, you should try different size of cache, for example, 512KB, 1MB, 2MB
 const unsigned cache_size = 1; // Size of a cache (in KB)
 // TODO, you should try different association configurations, for example 4, 8, 16
-const unsigned assoc = 8;
+const unsigned assoc = 16;
 
 Cache *initCache()
 {
     Cache *cache = (Cache *)malloc(sizeof(Cache));
+
+    cache->blk_mask = block_size - 1;
 
     unsigned num_blocks = cache_size * 1024 / block_size;
     cache->num_blocks = num_blocks;
@@ -21,6 +23,7 @@ Cache *initCache()
     int i;
     for (i = 0; i < num_blocks; i++)
     {
+        cache->blocks[i].tag = UINTMAX_MAX; 
         cache->blocks[i].valid = false;
         cache->blocks[i].dirty = false;
         cache->blocks[i].when_touched = 0;
@@ -69,3 +72,52 @@ Cache *initCache()
     return cache;
 }
 
+bool accessBlock(Cache *cache, Request *req, uint64_t access_time)
+{
+    bool hit = false;
+
+    uint64_t blk_aligned_addr = blkAlign(req->load_or_store_addr, cache->blk_mask);
+
+    Cache_Block *blk = findBlock(cache, blk_aligned_addr);
+   
+    if (blk != NULL) 
+    {
+        hit = true;
+
+        // TODO, cache->policy->upgrade(blk, access_time)
+	// TODO, if LOAD, dirty
+    }
+
+    return hit;
+}
+
+// Helper Functions
+uint64_t blkAlign(uint64_t addr, uint64_t mask)
+{
+    return addr & ~mask;
+}
+
+Cache_Block *findBlock(Cache *cache, uint64_t addr)
+{
+    printf("Addr: %"PRIu64"\n", addr);
+
+    // Extract tag
+    uint64_t tag = addr >> cache->tag_shift;
+    printf("Tag: %"PRIu64"\n", tag);
+
+    // Extract set index
+    uint64_t set_idx = (addr >> cache->set_shift) & cache->set_mask;
+    printf("Set: %"PRIu64"\n", set_idx);
+
+    Cache_Block **ways = cache->sets[set_idx].ways;
+    int i;
+    for (i = 0; i < cache->num_ways; i++)
+    {
+        if (tag == ways[i]->tag && ways[i]->valid == true)
+        {
+            return ways[i];
+        }
+    }
+
+    return NULL;
+}
