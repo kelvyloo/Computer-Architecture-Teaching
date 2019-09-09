@@ -6,6 +6,7 @@ extern bool getRequest(TraceParser *mem_trace);
 
 extern Cache* initCache();
 extern bool accessBlock(Cache *cache, Request *req, uint64_t access_time);
+extern void insertBlock(Cache *cache, Request *req, uint64_t access_time);
 
 int main(int argc, const char *argv[])
 {	
@@ -32,14 +33,15 @@ int main(int argc, const char *argv[])
         if (accessBlock(cache, mem_trace->cur_req, cycles))
         {
             // Cache hit!
+	    // printf("Hit\n");
         }
         else
         {
             // Cache miss!
             // Step two, insertBlock()
+            insertBlock(cache, mem_trace->cur_req, cycles);
         }
 
-        exit(0);
         ++num_of_reqs;
         ++cycles;
     }

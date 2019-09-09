@@ -1,6 +1,8 @@
 #ifndef __CACHE_H__
 #define __CACHE_H__
 
+#include <assert.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -9,6 +11,8 @@
 
 #include "Cache_Blk.h"
 #include "Request.h"
+
+#define LRU
 
 /* Cache */
 typedef struct Set
@@ -38,10 +42,13 @@ typedef struct Cache
 // Function Definitions
 Cache *initCache();
 bool accessBlock(Cache *cache, Request *req, uint64_t access_time);
-void insertBlock(Cache *cache, Request *req);
+void insertBlock(Cache *cache, Request *req, uint64_t access_time);
 
 // Helper Function
 uint64_t blkAlign(uint64_t addr, uint64_t mask);
 Cache_Block *findBlock(Cache *cache, uint64_t addr);
+
+// Replacement Policies
+Cache_Block *lru(Cache *cache, uint64_t addr);
 
 #endif

@@ -84,30 +84,62 @@ bool accessBlock(Cache *cache, Request *req, uint64_t access_time)
     {
         hit = true;
 
-        // TODO, cache->policy->upgrade(blk, access_time)
-	// TODO, if LOAD, dirty
+        // Update access time	
+        blk->when_touched = access_time;
+        // Increment frequency counter
+        ++blk->frequency;
+
+        if (req->req_type == STORE)
+        {
+            blk->dirty = true;
+        }
     }
 
     return hit;
 }
 
+void insertBlock(Cache *cache, Request *req, uint64_t access_time)
+{
+    // Step one, find a victim block
+    uint64_t blk_aligned_addr = blkAlign(req->load_or_store_addr, cache->blk_mask);
+
+    Cache_Block *victim = NULL;
+    #ifdef LRU
+        victim = lru(cache, blk_aligned_addr);
+    #endif
+    assert(victim != NULL);
+
+    // Step two, insert the new block
+    uint64_t tag = req->load_or_store_addr >> cache->tag_shift;
+    victim->tag = tag;
+    victim->valid = true;
+
+    victim->when_touched = access_time;
+    ++victim->frequency;
+
+    if (req->req_type == STORE)
+    {
+        victim->dirty = true;
+    }
+}
+
 // Helper Functions
-uint64_t blkAlign(uint64_t addr, uint64_t mask)
+inline uint64_t blkAlign(uint64_t addr, uint64_t mask)
 {
     return addr & ~mask;
 }
 
 Cache_Block *findBlock(Cache *cache, uint64_t addr)
 {
-    printf("Addr: %"PRIu64"\n", addr);
+//    printf("Addr: %"PRIu64"\n", addr);
 
     // Extract tag
     uint64_t tag = addr >> cache->tag_shift;
-    printf("Tag: %"PRIu64"\n", tag);
+//    printf("Tag: %"PRIu64"\n", tag);
 
     // Extract set index
     uint64_t set_idx = (addr >> cache->set_shift) & cache->set_mask;
-    printf("Set: %"PRIu64"\n", set_idx);
+//    printf("Set: %"PRIu64"\n", set_idx);
 
     Cache_Block **ways = cache->sets[set_idx].ways;
     int i;
@@ -120,4 +152,40 @@ Cache_Block *findBlock(Cache *cache, uint64_t addr)
     }
 
     return NULL;
+}
+
+Cache_Block *lru(Cache *cache, uint64_t addr)
+{
+    uint64_t set_idx = (addr >> cache->set_shift) & cache->set_mask;
+    //    printf("Set: %"PRIu64"\n", set_idx);
+    Cache_Block **ways = cache->sets[set_idx].ways;
+
+    // Step one, try to find an invalid block.
+    int i;
+    for (i = 0; i < cache->num_ways; i++)
+    {
+        if (ways[i]->valid == false)
+        {
+            return ways[i];
+        }
+    }
+
+    // Step two, if there is no invalid block. Locate the LRU block
+    Cache_Block *victim = ways[0];
+    for (i = 1; i < cache->num_ways; i++)
+    {
+        if (ways[i]->when_touched < victim->when_touched)
+        {
+            victim = ways[i];
+        }
+    }
+
+    // Step three, invalidate victim
+    victim->tag = UINTMAX_MAX;
+    victim->valid = false;
+    victim->dirty = false;
+    victim->frequency = 0;
+    victim->when_touched = 0;
+
+    return victim; // Return back the LRU block.
 }
