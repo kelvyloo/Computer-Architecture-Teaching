@@ -9,4 +9,4 @@ $(TARGET): $(SOURCE)
 	$(CC) -o $(TARGET) $(SOURCE) $(LINK)
 
 clean:
-	rm $(TARGET)
+	rm -f $(TARGET)
