@@ -21,13 +21,13 @@ int main(int argc, const char *argv[])
     TraceParser *mem_trace = initTraceParser(argv[1]);
 
     // Initialize a Cache
-    // TODO, should have L2 and L3
     Cache *cache = initCache();
     
     // Running the trace
     uint64_t num_of_reqs = 0;
     uint64_t hits = 0;
     uint64_t misses = 0;
+    uint64_t num_evicts = 0;
 
     uint64_t cycles = 0;
     while (getRequest(mem_trace))
@@ -43,11 +43,12 @@ int main(int argc, const char *argv[])
             // Cache miss!
             misses++;
             // Step two, insertBlock()
-            printf("Inserting: %"PRIu64"\n", mem_trace->cur_req->load_or_store_addr);
+//            printf("Inserting: %"PRIu64"\n", mem_trace->cur_req->load_or_store_addr);
             uint64_t wb_addr;
             if (insertBlock(cache, mem_trace->cur_req, cycles, &wb_addr))
             {
-                printf("Evicted: %"PRIu64"\n", wb_addr);
+                num_evicts++;
+//                printf("Evicted: %"PRIu64"\n", wb_addr);
             }
         }
 
