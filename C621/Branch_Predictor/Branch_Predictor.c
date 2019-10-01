@@ -219,6 +219,8 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
 
     // Step six, update global history register
     branch_predictor->global_history = branch_predictor->global_history << 1 | instr->taken;
+    local_history_table[local_history_table_index] =
+            local_history_table[local_history_table_index] << 1 | instr->taken;
     // exit(0);
     //
     return prediction_correct;
