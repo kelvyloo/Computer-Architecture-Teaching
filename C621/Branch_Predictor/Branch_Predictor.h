@@ -12,6 +12,7 @@
 // Predictor type
 #define TWO_BIT_LOCAL
 //#define TOURNAMENT
+//#define GSHARE
 
 // saturating counter
 typedef struct Sat_Counter
@@ -50,6 +51,12 @@ typedef struct Branch_Predictor
     uint64_t global_history;
     unsigned history_register_mask;
     #endif
+
+    #ifdef GSHARE
+    uint64_t global_history_register;
+    Sat_Counter *pattern_history_table;
+    #endif
+
 }Branch_Predictor;
 
 // Initialization function

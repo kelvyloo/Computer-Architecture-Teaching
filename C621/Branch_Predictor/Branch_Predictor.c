@@ -3,13 +3,18 @@
 const unsigned instShiftAmt = 2; // Number of bits to shift a PC by
 
 // You can play around with these settings.
-const unsigned localPredictorSize = 2048;
+const unsigned localPredictorSize = 65536;
 const unsigned localCounterBits = 2;
-const unsigned localHistoryTableSize = 2048; 
-const unsigned globalPredictorSize = 8192 ;
+const unsigned localHistoryTableSize = 16384; 
+const unsigned globalPredictorSize = 16384;
 const unsigned globalCounterBits = 2;
-const unsigned choicePredictorSize = 8192; // Keep this the same as globalPredictorSize.
+const unsigned choicePredictorSize = 16384; // Keep this the same as globalPredictorSize.
 const unsigned choiceCounterBits = 2;
+
+// gShare const variables
+const unsigned global_history_register_size = 12;
+const unsigned pattern_history_table_size   = 4096; // 2 ^ number of ghr bits
+const unsigned pht_counter_bits             = 2;
 
 Branch_Predictor *initBranchPredictor()
 {
@@ -94,6 +99,20 @@ Branch_Predictor *initBranchPredictor()
 
     // We assume choice predictor size is always equal to global predictor size.
     branch_predictor->history_register_mask = choicePredictorSize - 1;
+    #endif
+
+    #ifdef GSHARE
+    assert(checkPowerofTwo(pattern_history_table_size));
+
+    branch_predictor->global_history_register = 0;
+
+    // Initialize pattern_history_table
+    branch_predictor->pattern_history_table = 
+        (Sat_Counter *)malloc(pattern_history_table_size * sizeof(Sat_Counter));
+
+    for (int i = 0; i < pattern_history_table_size; i++)
+        initSatCounter(&(branch_predictor->pattern_history_table[i]), pht_counter_bits);
+
     #endif
 
     return branch_predictor;
@@ -223,6 +242,27 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
     // exit(0);
     //
     return prediction_correct;
+    #endif
+
+    #ifdef GSHARE
+    /* Update the global history table with whether the branch taken or !taken */
+    branch_predictor->global_history_register &= global_history_register_size;
+    branch_predictor->global_history_register  = branch_predictor->global_history_register << 1;
+    branch_predictor->global_history_register  = instr->taken;
+
+    /* XOR global history reg with PC */
+    uint64_t pht_index = branch_predictor->global_history_register ^ instr->PC;
+    pht_index &= global_history_register_size;
+
+    bool predictor = getPrediction(&branch_predictor->pattern_history_table[pht_index]);
+
+    if (instr->taken)
+        incrementCounter(&branch_predictor->pattern_history_table[pht_index]);
+    else
+        decrementCounter(&branch_predictor->pattern_history_table[pht_index]);
+
+    return (predictor == instr->taken);
+
     #endif
 }
 
