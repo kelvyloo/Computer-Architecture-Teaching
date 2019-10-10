@@ -12,8 +12,8 @@ const unsigned choicePredictorSize = 16384; // Keep this the same as globalPredi
 const unsigned choiceCounterBits = 2;
 
 // gShare const variables
-const unsigned global_history_register_size = 12;
-const unsigned pattern_history_table_size   = 4096; // 2 ^ number of ghr bits
+const unsigned global_history_register_size = 15;
+const unsigned pattern_history_table_size   = 32768; // 2 ^ number of ghr bits
 const unsigned pht_counter_bits             = 2;
 
 Branch_Predictor *initBranchPredictor()
@@ -122,8 +122,8 @@ Branch_Predictor *initBranchPredictor()
 inline void initSatCounter(Sat_Counter *sat_counter, unsigned counter_bits)
 {
     sat_counter->counter_bits = counter_bits;
-    sat_counter->counter = 0;
     sat_counter->max_val = (1 << counter_bits) - 1;
+    sat_counter->counter = sat_counter->max_val;
 }
 
 inline void incrementCounter(Sat_Counter *sat_counter)
@@ -246,13 +246,13 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
 
     #ifdef GSHARE
     /* Update the global history table with whether the branch taken or !taken */
-    branch_predictor->global_history_register &= global_history_register_size;
+    branch_predictor->global_history_register &= ((1 << global_history_register_size) - 1);
     branch_predictor->global_history_register  = branch_predictor->global_history_register << 1;
-    branch_predictor->global_history_register  = instr->taken;
+    branch_predictor->global_history_register |= instr->taken;
 
     /* XOR global history reg with PC */
     uint64_t pht_index = branch_predictor->global_history_register ^ instr->PC;
-    pht_index &= global_history_register_size;
+    pht_index &= ((1 << global_history_register_size) - 1);
 
     bool predictor = getPrediction(&branch_predictor->pattern_history_table[pht_index]);
 

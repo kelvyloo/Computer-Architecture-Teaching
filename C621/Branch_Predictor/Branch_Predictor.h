@@ -10,9 +10,9 @@
 #include "Instruction.h"
 
 // Predictor type
-#define TWO_BIT_LOCAL
+//#define TWO_BIT_LOCAL
 //#define TOURNAMENT
-//#define GSHARE
+#define GSHARE
 
 // saturating counter
 typedef struct Sat_Counter
