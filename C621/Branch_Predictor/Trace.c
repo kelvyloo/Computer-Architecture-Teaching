@@ -27,7 +27,7 @@ bool getInstruction(TraceParser *cpu_trace)
         // This is the instruction type
         ptr = strtok(NULL, delim);
         if (strcmp(ptr, "B") == 0)
-	{
+        {
             cpu_trace->cur_instr->instr_type = BRANCH;
         }
         else if (strcmp(ptr, "E") == 0)

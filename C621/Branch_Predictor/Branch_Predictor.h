@@ -12,7 +12,21 @@
 // Predictor type
 //#define TWO_BIT_LOCAL
 //#define TOURNAMENT
-#define GSHARE
+//#define GSHARE
+#define PERCEPTRON
+
+// Perceptron constants
+#define HARDWARE_BUDGET (4*1024*8)
+
+#define N_WEIGHTS       (24)
+
+#define WEIGHT_BITS     (8)
+#define MAX_WEIGHT      ((1<<(WEIGHT_BITS-1))-1)
+#define MIN_WEIGHT      (-(WEIGHT_BITS+1))
+
+#define THETA           ((int) (1.93 * N_WEIGHTS + 14))
+
+#define NUM_PERCEPTRONS ((int) (HARDWARE_BUDGET/((N_WEIGHTS+1) * WEIGHT_BITS)))
 
 // saturating counter
 typedef struct Sat_Counter
@@ -55,6 +69,13 @@ typedef struct Branch_Predictor
     #ifdef GSHARE
     uint64_t global_history_register;
     Sat_Counter *pattern_history_table;
+    #endif
+
+    #ifdef PERCEPTRON
+    int perceptrons[NUM_PERCEPTRONS][N_WEIGHTS];
+    int bias[NUM_PERCEPTRONS];
+    int global_history;
+    int y;
     #endif
 
 }Branch_Predictor;
