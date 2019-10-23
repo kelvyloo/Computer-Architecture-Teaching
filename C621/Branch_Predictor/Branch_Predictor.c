@@ -282,22 +282,22 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
     #endif
 
     #ifdef PERCEPTRON
-    int index, x, j, t;
+    int index, x, t;
     bool prediction;
 
     // 1.) Hash branch address to index perceptron table
     index = instr->PC % NUM_PERCEPTRONS;
     branch_predictor->y = branch_predictor->bias[index];
-    j = 1;
 
     // 2. ) ith perceptron fetched
-    for (int i = 0; i < N_WEIGHTS; i++) {
-        x = (branch_predictor->global_history & j) ? 1 : -1;
+    for (int i = 0, j = 1; i < N_WEIGHTS; i++, j <<= 1) {
+        if (!i)
+            x = 1;
+        else 
+            x = (branch_predictor->global_history & j) ? 1 : -1;
 
         // 3.) y calculated as dot product P and GHR
         branch_predictor->y += branch_predictor->perceptrons[index][i] * x;
-        
-        j = j << 1;
     }
     // 4.) Branch predicted as taken if positive else !taken
     prediction = (branch_predictor->y >= 0) ? true : false;
@@ -306,18 +306,17 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
     t = (instr->taken) ? 1 : -1;
 
     if (instr->taken != prediction || 
-        (branch_predictor->y < THETA && 
-         branch_predictor->y > -1*THETA)) {
+        (branch_predictor->y < THETA && branch_predictor->y > -1*THETA)) {
 
-        //if (branch_predictor->bias[index] > MIN_WEIGHT &&
-        //    branch_predictor->bias[index] < MAX_WEIGHT)
-        //    branch_predictor->bias[index] += t;
+        if (branch_predictor->bias[index] > MIN_WEIGHT &&
+            branch_predictor->bias[index] < MAX_WEIGHT)
+            branch_predictor->bias[index] += t;
         
-        j = 1;
-
-        for (int i = 0; i < N_WEIGHTS; i++) {
-            x = ((branch_predictor->global_history & j) && instr->taken) ? 1 : -1;
-            j = j << 1;
+        for (int i = 0, j = 1; i < N_WEIGHTS; i++, j <<= 1) {
+            if (!i)
+                x = 1;
+            else
+                x = ((branch_predictor->global_history & j) && instr->taken) ? 1 : -1;
 
             // 6.) P written back into ith entry of table
             if (branch_predictor->perceptrons[index][i] > MIN_WEIGHT && 
@@ -326,7 +325,7 @@ bool predict(Branch_Predictor *branch_predictor, Instruction *instr)
         }
     }
     // Update global history reg
-    branch_predictor->global_history  = branch_predictor->global_history << 1;
+    branch_predictor->global_history <<= 1;
     branch_predictor->global_history |= instr->taken;
     
     return prediction;
