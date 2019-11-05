@@ -3,9 +3,9 @@
 /* Constants */
 const unsigned block_size = 64; // Size of a cache line (in Bytes)
 // TODO, you should try different size of cache, for example, 128KB, 256KB, 512KB, 1MB, 2MB
-const unsigned cache_size = 128; // Size of a cache (in KB)
+const unsigned cache_size = 256; // Size of a cache (in KB)
 // TODO, you should try different association configurations, for example 4, 8, 16
-const unsigned assoc = 4;
+const unsigned assoc = 16;
 
 Cache *initCache()
 {
@@ -107,6 +107,9 @@ bool insertBlock(Cache *cache, Request *req, uint64_t access_time, uint64_t *wb_
     #ifdef LRU
         bool wb_required = lru(cache, blk_aligned_addr, &victim, wb_addr);
     #endif
+    #ifdef LFU
+        bool wb_required = lfu(cache, blk_aligned_addr, &victim, wb_addr);
+    #endif
     assert(victim != NULL);
 
     // Step two, insert the new block
@@ -160,7 +163,7 @@ Cache_Block *findBlock(Cache *cache, uint64_t addr)
 bool lru(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr)
 {
     uint64_t set_idx = (addr >> cache->set_shift) & cache->set_mask;
-    //    printf("Set: %"PRIu64"\n", set_idx);
+    //printf("Set: %"PRIu64"\n", set_idx);
     Cache_Block **ways = cache->sets[set_idx].ways;
 
     // Step one, try to find an invalid block.
@@ -183,6 +186,56 @@ bool lru(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_add
             victim = ways[i];
         }
     }
+
+    // Step three, need to write-back the victim block
+    *wb_addr = (victim->tag << cache->tag_shift) | (victim->set << cache->set_shift);
+//    uint64_t ori_addr = (victim->tag << cache->tag_shift) | (victim->set << cache->set_shift);
+//    printf("Evicted: %"PRIu64"\n", ori_addr);
+
+    // Step three, invalidate victim
+    victim->tag = UINTMAX_MAX;
+    victim->valid = false;
+    victim->dirty = false;
+    victim->frequency = 0;
+    victim->when_touched = 0;
+
+    *victim_blk = victim;
+
+    return true; // Need to write-back
+}
+
+bool lfu(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr)
+{
+    uint64_t set_idx = (addr >> cache->set_shift) & cache->set_mask;
+    //printf("Set: %"PRIu64"\n", set_idx);
+    Cache_Block **ways = cache->sets[set_idx].ways;
+
+    // Step one, try to find an invalid block.
+    int i;
+    for (i = 0; i < cache->num_ways; i++)
+    {
+        if (ways[i]->valid == false)
+        {
+            *victim_blk = ways[i];
+            return false; // No need to write-back
+        }
+    }
+
+    // Step two, if there is no invalid block. Locate the LFU block
+    Cache_Block *victim = ways[0];
+    uint64_t min = victim->frequency;
+    int lfu_index = 0;
+
+    for (i = 1; i < cache->num_ways; i++)
+    {
+        /* Find min freq and index */
+        if (ways[i]->frequency < min)
+        {
+            min = ways[i]->frequency;
+            lfu_index = i;
+        }
+    }
+    victim = ways[lfu_index];
 
     // Step three, need to write-back the victim block
     *wb_addr = (victim->tag << cache->tag_shift) | (victim->set << cache->set_shift);
