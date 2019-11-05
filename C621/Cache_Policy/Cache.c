@@ -223,19 +223,13 @@ bool lfu(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_add
 
     // Step two, if there is no invalid block. Locate the LFU block
     Cache_Block *victim = ways[0];
-    uint64_t min = victim->frequency;
-    int lfu_index = 0;
-
     for (i = 1; i < cache->num_ways; i++)
     {
-        /* Find min freq and index */
-        if (ways[i]->frequency < min)
+        if (ways[i]->frequency < victim->frequency)
         {
-            min = ways[i]->frequency;
-            lfu_index = i;
+            victim = ways[i];
         }
     }
-    victim = ways[lfu_index];
 
     // Step three, need to write-back the victim block
     *wb_addr = (victim->tag << cache->tag_shift) | (victim->set << cache->set_shift);
