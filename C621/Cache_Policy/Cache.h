@@ -13,7 +13,19 @@
 #include "Request.h"
 
 //#define LRU
-#define LFU
+//#define LFU
+#define SHIPPC
+
+#define SHCT_SIZE (1*1024) // Recommended 1K~16K
+//#define SHCT_SIZE (2)
+
+// saturating counter
+typedef struct Sat_Counter
+{
+    unsigned counter_bits;
+    uint8_t max_val;
+    uint8_t counter;
+}Sat_Counter;
 
 /* Cache */
 typedef struct Set
@@ -36,6 +48,9 @@ typedef struct Cache
     unsigned set_mask; // To extract set index
     unsigned tag_shift; // To extract tag
 
+    Sat_Counter *shct; // signature history counter table
+    uint64_t signature; // pc hashed signature
+
     Set *sets; // All the sets of a cache
     
 }Cache;
@@ -52,5 +67,11 @@ Cache_Block *findBlock(Cache *cache, uint64_t addr);
 // Replacement Policies
 bool lru(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr);
 bool lfu(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr);
+bool ship(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr);
+
+// Counter functions
+void initSatCounter(Sat_Counter *sat_counter, unsigned counter_bits);
+void incrementCounter(Sat_Counter *sat_counter);
+void decrementCounter(Sat_Counter *sat_counter);
 
 #endif

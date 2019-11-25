@@ -22,6 +22,10 @@ typedef struct Cache_Block
     // Advanced Features
     uint64_t PC; // Which instruction that brings in this block?
     int core_id; // Which core the instruction is running on.
+
+    int outcome;
+    uint64_t signature_m;
+
 }Cache_Block;
 
 #endif

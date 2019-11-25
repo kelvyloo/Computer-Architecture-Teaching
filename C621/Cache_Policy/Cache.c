@@ -5,7 +5,7 @@ const unsigned block_size = 64; // Size of a cache line (in Bytes)
 // TODO, you should try different size of cache, for example, 128KB, 256KB, 512KB, 1MB, 2MB
 const unsigned cache_size = 256; // Size of a cache (in KB)
 // TODO, you should try different association configurations, for example 4, 8, 16
-const unsigned assoc = 16;
+const unsigned assoc = 4;
 
 Cache *initCache()
 {
@@ -28,6 +28,8 @@ Cache *initCache()
         cache->blocks[i].dirty = false;
         cache->blocks[i].when_touched = 0;
         cache->blocks[i].frequency = 0;
+        cache->blocks[i].outcome = 0;
+        cache->blocks[i].signature_m = 0;
     }
 
     // Initialize Set-way variables
@@ -47,6 +49,14 @@ Cache *initCache()
     unsigned tag_shift = set_shift + log2(num_sets);
     cache->tag_shift = tag_shift;
 //    printf("Tag shift: %u\n", cache->tag_shift);
+
+    // Initialize SHCT 2-bit sat counters
+    cache->shct = (Sat_Counter *)malloc(SHCT_SIZE * sizeof(Sat_Counter));
+
+    for (int i = 0; i < SHCT_SIZE; i++)
+        initSatCounter(&(cache->shct[i]), 2);
+
+    cache->signature = 0;
 
     // Initialize Sets
     cache->sets = (Set *)malloc(num_sets * sizeof(Set));
@@ -79,10 +89,16 @@ bool accessBlock(Cache *cache, Request *req, uint64_t access_time)
     uint64_t blk_aligned_addr = blkAlign(req->load_or_store_addr, cache->blk_mask);
 
     Cache_Block *blk = findBlock(cache, blk_aligned_addr);
+
+    cache->signature = req->PC & 0x3FF;
    
     if (blk != NULL) 
     {
         hit = true;
+
+        blk->outcome = true;
+        blk->signature_m = cache->signature;
+        incrementCounter(&(cache->shct[blk->signature_m]));
 
         // Update access time	
         blk->when_touched = access_time;
@@ -109,6 +125,9 @@ bool insertBlock(Cache *cache, Request *req, uint64_t access_time, uint64_t *wb_
     #endif
     #ifdef LFU
         bool wb_required = lfu(cache, blk_aligned_addr, &victim, wb_addr);
+    #endif
+    #ifdef SHIPPC
+        bool wb_required = ship(cache, blk_aligned_addr, &victim, wb_addr);
     #endif
     assert(victim != NULL);
 
@@ -158,6 +177,30 @@ Cache_Block *findBlock(Cache *cache, uint64_t addr)
     }
 
     return NULL;
+}
+
+// sat counter functions
+inline void initSatCounter(Sat_Counter *sat_counter, unsigned counter_bits)
+{
+    sat_counter->counter_bits = counter_bits;
+    sat_counter->max_val = (1 << counter_bits) - 1;
+    sat_counter->counter = sat_counter->max_val;
+}
+
+inline void incrementCounter(Sat_Counter *sat_counter)
+{
+    if (sat_counter->counter < sat_counter->max_val)
+    {
+        ++sat_counter->counter;
+    }
+}
+
+inline void decrementCounter(Sat_Counter *sat_counter)
+{
+    if (sat_counter->counter > 0) 
+    {
+        --sat_counter->counter;
+    }
 }
 
 bool lru(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr)
@@ -247,3 +290,58 @@ bool lfu(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_add
 
     return true; // Need to write-back
 }
+
+bool ship(Cache *cache, uint64_t addr, Cache_Block **victim_blk, uint64_t *wb_addr)
+{
+    uint64_t set_idx = (addr >> cache->set_shift) & cache->set_mask;
+    Cache_Block **ways = cache->sets[set_idx].ways;
+
+    // Step one, try to find an invalid block.
+    int i;
+    for (i = 0; i < cache->num_ways; i++)
+    {
+        if (ways[i]->valid == false)
+        {
+            *victim_blk = ways[i];
+            return false; // No need to write-back
+        }
+    }
+
+    Cache_Block *victim = ways[0];
+    //uint8_t min = cache->shct[ways[0]->signature_m].counter;
+    //int min_idx = 0;
+
+    for (i = 0; i < cache->num_ways; i++)
+    {
+        //if (cache->shct[ways[i]->signature_m].counter < min) {
+        //    min = cache->shct[ways[i]->signature_m].counter;
+        //    min_idx = i;
+        //}
+        if (cache->shct[ways[i]->signature_m].counter == 0) {
+            victim = ways[i];
+            break;
+        }
+    }
+
+    //victim = ways[min_idx];
+
+    if (!victim->outcome)
+        decrementCounter(&(cache->shct[victim->signature_m]));
+
+    // Step three, need to write-back the victim block
+    *wb_addr = (victim->tag << cache->tag_shift) | (victim->set << cache->set_shift);
+
+    // Step three, invalidate victim
+    victim->tag = UINTMAX_MAX;
+    victim->valid = false;
+    victim->dirty = false;
+    victim->frequency = 0;
+    victim->when_touched = 0;
+    victim->outcome = 0;
+    victim->signature_m = cache->signature;
+
+    *victim_blk = victim;
+
+    return true; // Need to write-back
+}
+
